@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111318">
+  <title>Tactical Hub | VALORANT</title>
+  <style>
+    :root{color-scheme:dark;--bg:#101116;--panel:#191b23;--panel2:#222530;--line:#303440;--muted:#a5a9b5;--red:#ff4655;--white:#f5f6f8}
+    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 80% -15%,#382027 0,transparent 42%),var(--bg);color:var(--white);font:15px/1.5 Inter,system-ui,Segoe UI,sans-serif}
+    button,input,textarea,select{font:inherit}button{cursor:pointer}.shell{max-width:1180px;margin:auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding:8px 0 22px}
+    .brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;display:grid;place-items:center;background:var(--red);clip-path:polygon(0 0,100% 0,72% 100%,0 78%);font-weight:950;color:#fff;font-size:22px}
+    h1{font-size:19px;letter-spacing:.12em;margin:0}.sub{color:var(--muted);font-size:11px;letter-spacing:.16em}
+    .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.btn{border:1px solid var(--line);border-radius:9px;padding:9px 13px;background:var(--panel2);color:var(--white);font-weight:650}.btn.primary{background:var(--red);border-color:var(--red)}.btn:disabled{opacity:.5;cursor:not-allowed}
+    .hero{padding:38px 0 24px}.eyebrow{color:var(--red);font-size:12px;font-weight:800;letter-spacing:.18em}.hero h2{font-size:clamp(30px,5vw,52px);line-height:1.02;max-width:700px;margin:10px 0}.hero p{color:var(--muted);max-width:650px;margin:12px 0}
+    .section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:24px 0 14px}.section-head h3{margin:0;font-size:20px}.muted{color:var(--muted)}.map-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:13px}
+    .map-card{min-height:118px;text-align:left;padding:17px;border:1px solid var(--line);border-radius:13px;background:linear-gradient(140deg,#252833,#171920);color:var(--white);transition:.16s}.map-card:hover{border-color:var(--red);transform:translateY(-2px)}.map-no{color:var(--red);font-size:11px;font-weight:800;letter-spacing:.16em}.map-name{font-size:21px;font-weight:850;margin-top:8px}.map-foot{font-size:12px;color:var(--muted);margin-top:4px}
+    .crumb{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;margin:25px 0 10px}.crumb button{background:none;border:0;color:var(--red);padding:0}.category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.category{padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-align:left;color:var(--white)}.category:hover{border-color:var(--red)}.category strong{display:block;font-size:18px}.category span{color:var(--muted);font-size:12px}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px;margin:16px 0}.tactic{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:10px 0}.tactic h4{margin:0 0 5px;font-size:18px}.tactic p{white-space:pre-wrap;color:#c4c7d0;margin:8px 0}.links{display:flex;gap:10px;flex-wrap:wrap}.links a{color:#ff8791;text-decoration:none}.links a:hover{text-decoration:underline}
+    .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:var(--muted)}input,textarea,select{width:100%;background:#101218;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--white)}textarea{min-height:90px;resize:vertical}
+    .hidden{display:none!important}.notice{padding:12px 14px;border-radius:9px;background:#29232a;border:1px solid #63313a;color:#ffd9dc;margin:12px 0}.member-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}.pill{font-size:11px;padding:3px 8px;border-radius:30px;background:#173b2c;color:#9ae2bd}.pill.off{background:#45252b;color:#ffb4bc}
+    footer{border-top:1px solid var(--line);margin-top:50px;padding:18px 0;color:var(--muted);font-size:12px}
+    dialog{width:min(430px,calc(100% - 28px));border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--white);padding:22px}dialog::backdrop{background:#000b}.dialog-actions{display:flex;justify-content:end;gap:8px;margin-top:15px}
+    @media(max-width:620px){.shell{padding:16px}.form-grid{grid-template-columns:1fr}.hero{padding-top:28px}header{align-items:flex-start}.actions{justify-content:end}}
+  </style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand"><div class="mark">T</div><div><h1>TACTICAL HUB</h1><div class="sub">VALORANT · TEAM PLAYBOOK</div></div></div>
+    <div class="actions"><span id="who" class="muted"></span><button id="loginBtn" class="btn">Entrar</button><button id="logoutBtn" class="btn hidden">Sair</button></div>
+  </header>
+  <main>
+    <section id="home">
+      <div class="hero"><div class="eyebrow">CENTRAL TÁTICA DA EQUIPE</div><h2>ESTUDE. EXECUTE.<br>DOMINE O MAPA.</h2><p>Um só lugar para reunir execuções, setups, vídeos, prints e PDFs da equipe.</p></div>
+      <div class="section-head"><div><h3>Selecione o mapa</h3><div class="muted">13 mapas · conteúdo organizado por estratégia</div></div></div>
+      <div id="mapGrid" class="map-grid"></div>
+    </section>
+    <section id="mapPage" class="hidden"><div class="crumb"><button id="homeCrumb">Mapas</button><span>/</span><span id="mapCrumb"></span></div><div class="hero"><div class="eyebrow">MAPA SELECIONADO</div><h2 id="mapTitle"></h2><p>Escolha uma categoria para consultar as táticas.</p></div><div id="categoryGrid" class="category-grid"></div></section>
+    <section id="categoryPage" class="hidden"><div class="crumb"><button id="mapCrumbBtn">Voltar ao mapa</button><span>/</span><span id="categoryCrumb"></span></div><div class="section-head"><div><div class="eyebrow" id="categoryMap"></div><h3 id="categoryTitle"></h3></div><button id="newTacticBtn" class="btn primary hidden">+ Nova tática</button></div><div id="tacticList"></div><div id="emptyTactics" class="panel muted">Ainda não há táticas cadastradas nesta categoria.</div>
+      <form id="tacticForm" class="panel hidden"><h3 style="margin-top:0">Cadastrar tática</h3><div class="form-grid">
+        <div class="field full"><label for="tacticName">Nome da estratégia *</label><input id="tacticName" required maxlength="90" placeholder="Ex.: Pistol A — execução rápida"></div>
+        <div class="field full"><label for="tacticDescription">Descrição / funções das jogadoras</label><textarea id="tacticDescription" placeholder="Explique a execução, posições e responsabilidades..."></textarea></div>
+        <div class="field full"><label for="videoUrl">Link de vídeo</label><input id="videoUrl" type="url" placeholder="https://..."></div>
+        <div class="field"><label for="imageUrl">Link de print/imagem</label><input id="imageUrl" type="url" placeholder="https://..."></div>
+        <div class="field"><label for="pdfUrl">Link de PDF</label><input id="pdfUrl" type="url" placeholder="https://..."></div>
+      </div><div class="actions" style="justify-content:end;margin-top:14px"><button type="button" id="cancelTactic" class="btn">Cancelar</button><button class="btn primary" type="submit">Salvar tática</button></div></form>
+    </section>
+    <section id="adminPage" class="hidden"><div class="crumb"><button id="adminHome">Mapas</button><span>/</span><span>Administração</span></div><div class="hero"><div class="eyebrow">ÁREA RESTRITA</div><h2>GERENCIAMENTO<br>DA EQUIPE</h2><p>Cadastre o UID de cada integrante depois de criar a conta dela no Firebase Authentication.</p></div>
+      <form id="memberForm" class="panel"><h3 style="margin-top:0">Adicionar integrante</h3><div class="form-grid"><div class="field"><label for="memberName">Nome</label><input id="memberName" required placeholder="Nome da jogadora"></div><div class="field"><label for="memberUid">UID do Firebase Authentication</label><input id="memberUid" required placeholder="UID da conta"></div></div><div class="actions" style="justify-content:end;margin-top:12px"><button class="btn primary">Adicionar acesso</button></div></form>
+      <div class="panel"><h3 style="margin-top:0">Integrantes cadastradas</h3><div id="memberList" class="muted">Carregando...</div></div>
+    </section>
+  </main>
+  <footer>TACTICAL HUB · Conteúdo da equipe · Acesso controlado pela coach</footer>
+</div>
+<dialog id="loginDialog"><form id="loginForm"><h3 style="margin-top:0">Acesso da equipe</h3><p class="muted">Entre com seu e-mail e senha cadastrados pela coach.</p><div class="field"><label for="email">E-mail</label><input id="email" type="email" required autocomplete="username"></div><div class="field" style="margin-top:10px"><label for="password">Senha</label><input id="password" type="password" required autocomplete="current-password"></div><div id="loginError" class="notice hidden"></div><div class="dialog-actions"><button type="button" id="closeLogin" class="btn">Cancelar</button><button class="btn primary">Entrar</button></div></form></dialog>
+<div id="globalNotice" class="notice hidden" style="position:fixed;bottom:16px;left:16px;right:16px;max-width:600px;margin:auto;z-index:5"></div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import { getFirestore, collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRMNXBan2UarVUxAKHJcyfNgwKf3uXunk",
+    authDomain: "tactical-hub-valorant-4481b.firebaseapp.com",
+    projectId: "tactical-hub-valorant-4481b",
+    storageBucket: "tactical-hub-valorant-4481b.firebasestorage.app",
+    messagingSenderId: "851177234379",
+    appId: "1:851177234379:web:1b285d3b96b1bb65bb604e"
+  };
+  const COACH_UID = "FJj2EIUkF0QD9B7HOnYKIojgS262";
+  const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
+  const maps = ["Ascent","Abyss","Bind","Breeze","Corrode","Fracture","Haven","Icebox","Lotus","Pearl","Split","Summit","Sunset"];
+  const categories = [
+    ["pistol","Pistol","Rounds pistola"],["anti-eco","Anti-Eco","Contra compras econômicas"],
+    ["full-buy","Full Buy","Compra completa"],["ataque","Ataque","Execuções e domínio de espaço"],
+    ["defesa","Defesa","Setups e posicionamentos"],["retake","Retake","Retomada de bomb"],
+    ["outros","Outras táticas","Estratégias personalizadas"]
+  ];
+  let currentUser=null,isCoach=false,activeMap="",activeCategory=null;
+  const $ = id => document.getElementById(id);
+  function notice(message){$("globalNotice").textContent=message;$("globalNotice").classList.remove("hidden");setTimeout(()=>$("globalNotice").classList.add("hidden"),4500)}
+  function show(section){["home","mapPage","categoryPage","adminPage"].forEach(id=>$(id).classList.toggle("hidden",id!==section))}
+  function renderMaps(){$("mapGrid").innerHTML=maps.map((m,i)=>'<button class="map-card" data-map="'+m+'"><div class="map-no">MAPA '+String(i+1).padStart(2,"0")+'</div><div class="map-name">'+m+'</div><div class="map-foot">Abrir central de táticas →</div></button>').join("");document.querySelectorAll("[data-map]").forEach(b=>b.addEventListener("click",()=>openMap(b.dataset.map)))}
+  function openMap(map){activeMap=map;$("mapTitle").textContent=map.toUpperCase();$("mapCrumb").textContent=map;$("categoryGrid").innerHTML=categories.map(c=>'<button class="category" data-cat="'+c[0]+'"><strong>'+c[1]+'</strong><span>'+c[2]+'</span></button>').join("");document.querySelectorAll("[data-cat]").forEach(b=>b.addEventListener("click",()=>openCategory(b.dataset.cat)));show("mapPage")}
+  async function openCategory(id){activeCategory=categories.find(c=>c[0]===id);$("categoryCrumb").textContent=activeCategory[1];$("categoryMap").textContent=activeMap.toUpperCase();$("categoryTitle").textContent=activeCategory[1];$("newTacticBtn").classList.toggle("hidden",!isCoach);$("tacticForm").classList.add("hidden");show("categoryPage");await loadTactics()}
+  async function loadTactics(){const list=$("tacticList");list.innerHTML="";$("emptyTactics").classList.add("hidden");try{const snap=await getDocs(collection(db,"tactics"));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>t.mapId===activeMap&&t.categoryId===activeCategory[0]);rows.sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));if(!rows.length){$("emptyTactics").classList.remove("hidden");return}rows.forEach(t=>{const el=document.createElement("article");el.className="tactic";const title=document.createElement("h4");title.textContent=t.title||"Tática sem título";const desc=document.createElement("p");desc.textContent=t.description||"Sem descrição.";el.append(title,desc);const links=document.createElement("div");links.className="links";[["Vídeo",t.videoUrl],["Print",t.imageUrl],["PDF",t.pdfUrl]].forEach(([label,url])=>{if(url){const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="↗ "+label;links.append(a)}});el.append(links);list.append(el)})}catch(e){list.innerHTML='<div class="notice">Não foi possível carregar as táticas. Verifique as regras do Firestore e se sua conta está ativa.</div>';console.error(e)}}
+  function openLogin(){$("loginError").classList.add("hidden");$("loginDialog").showModal()}
+  $("loginBtn").addEventListener("click",openLogin);$("closeLogin").addEventListener("click",()=>$("loginDialog").close());$("logoutBtn").addEventListener("click",()=>signOut(auth));
+  $("loginForm").addEventListener("submit",async e=>{e.preventDefault();try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);$("loginDialog").close()}catch(err){$("loginError").textContent="Não foi possível entrar. Confira e-mail e senha."; $("loginError").classList.remove("hidden")}});
+  onAuthStateChanged(auth,async user=>{currentUser=user;isCoach=!!user&&user.uid===COACH_UID;if(user&&!isCoach){try{const member=await getDoc(doc(db,"users",user.uid));if(!member.exists()||member.data().active!==true){await signOut(auth);currentUser=null;notice("Acesso ainda não liberado. Peça à coach para ativar seu cadastro.");return}}catch(e){await signOut(auth);currentUser=null;notice("Não foi possível validar seu acesso. Confira as regras do Firestore.");return}}
+    $("loginBtn").classList.toggle("hidden",!!currentUser);$("logoutBtn").classList.toggle("hidden",!currentUser);$("who").textContent=currentUser?(isCoach?"COACH":"JOGADORA"):"";if(isCoach){const admin=document.createElement("button");admin.id="adminBtn";admin.className="btn";admin.textContent="Equipe";if(!$("adminBtn"))$("who").after(admin);$("adminBtn").onclick=loadAdmin}else if($("adminBtn"))$("adminBtn").remove();if(activeCategory&&currentUser)await loadTactics()});
+  async function loadAdmin(){show("adminPage");await refreshMembers()}
+  async function refreshMembers(){const wrap=$("memberList");wrap.textContent="Carregando...";try{const snap=await getDocs(collection(db,"users"));wrap.innerHTML="";if(!snap.size){wrap.textContent="Nenhuma jogadora cadastrada ainda.";return}snap.forEach(d=>{const data=d.data(),row=document.createElement("div");row.className="member-row";const info=document.createElement("div");info.innerHTML="<strong></strong><div class='muted' style='font-size:11px'></div>";info.querySelector("strong").textContent=data.name||"Integrante";info.querySelector("div").textContent=d.id;const status=document.createElement("span");status.className="pill "+(data.active?"":"off");status.textContent=data.active?"Ativa":"Bloqueada";const btn=document.createElement("button");btn.className="btn";btn.textContent=data.active?"Bloquear":"Reativar";btn.onclick=async()=>{await updateDoc(doc(db,"users",d.id),{active:!data.active});await refreshMembers()};row.append(info,status,btn);wrap.append(row)})}catch(e){wrap.textContent="Erro ao carregar integrantes.";console.error(e)}}
+  $("memberForm").addEventListener("submit",async e=>{e.preventDefault();try{const uid=$("memberUid").value.trim();if(uid===COACH_UID)throw new Error("Esse UID pertence à coach.");await setDoc(doc(db,"users",uid),{name:$("memberName").value.trim(),active:true,role:"player",createdAt:serverTimestamp()});$("memberForm").reset();notice("Acesso da integrante cadastrado!");await refreshMembers()}catch(err){notice("Não foi possível cadastrar. Confira o UID e as regras.");console.error(err)}});
+  $("newTacticBtn").addEventListener("click",()=>$("tacticForm").classList.remove("hidden"));$("cancelTactic").addEventListener("click",()=>$("tacticForm").classList.add("hidden"));
+  $("tacticForm").addEventListener("submit",async e=>{e.preventDefault();try{await addDoc(collection(db,"tactics"),{mapId:activeMap,categoryId:activeCategory[0],title:$("tacticName").value.trim(),description:$("tacticDescription").value.trim(),videoUrl:$("videoUrl").value.trim(),imageUrl:$("imageUrl").value.trim(),pdfUrl:$("pdfUrl").value.trim(),createdAt:serverTimestamp(),createdBy:currentUser.uid});$("tacticForm").reset();$("tacticForm").classList.add("hidden");notice("Tática salva!");await loadTactics()}catch(err){notice("Não foi possível salvar. Confira sua autenticação e as regras.");console.error(err)}});
+  $("homeCrumb").onclick=()=>show("home");$("adminHome").onclick=()=>show("home");$("mapCrumbBtn").onclick=()=>show("mapPage");
+  renderMaps();
+</script>
+</body>
+</html>
