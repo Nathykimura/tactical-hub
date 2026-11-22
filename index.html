@@ -44,10 +44,10 @@
         <div class="field full"><label for="tacticName">Nome da estratégia *</label><input id="tacticName" required maxlength="90" placeholder="Ex.: Pistol A — execução rápida"></div>
         <div class="field full"><label for="tacticDescription">Descrição / funções das jogadoras</label><textarea id="tacticDescription" placeholder="Explique a execução, posições e responsabilidades..."></textarea></div>
         <div class="field full"><label for="videoUrl">Link de vídeo</label><input id="videoUrl" type="url" placeholder="https://..."></div>
-        <div class="field"><label for="imageFile">Enviar print/imagem (opcional)</label><input id="imageFile" type="file" accept="image/*"></div>
-        <div class="field"><label for="pdfFile">Enviar PDF (opcional)</label><input id="pdfFile" type="file" accept="application/pdf"></div>
-        <div class="field"><label for="imageUrl">Ou link de print/imagem</label><input id="imageUrl" type="url" placeholder="https://..."></div>
-        <div class="field"><label for="pdfUrl">Ou link de PDF</label><input id="pdfUrl" type="url" placeholder="https://..."></div>
+        <div class="field"><label for="imageFile">Escolher print/imagem do computador (opcional)</label><input id="imageFile" type="file" accept="image/*"></div>
+        <div class="field"><label for="pdfFile">Escolher PDF do computador (opcional)</label><input id="pdfFile" type="file" accept="application/pdf"></div>
+        
+        
         <div class="field full"><div id="uploadStatus" class="muted" aria-live="polite">Arquivos: até 20 MB cada. Formatos aceitos: imagens e PDF.</div></div>
       </div><div class="actions" style="justify-content:end;margin-top:14px"><button type="button" id="cancelTactic" class="btn">Cancelar</button><button class="btn primary" type="submit">Salvar tática</button></div></form>
     </section>
@@ -109,7 +109,7 @@
     if(pdfFile&&(pdfFile.type!=="application/pdf"||pdfFile.size>20*1024*1024)){notice("O PDF precisa ter até 20 MB.");return}
     submit.disabled=true;$("uploadStatus").textContent="Enviando arquivos...";
     try{
-      let imageUrl=$("imageUrl").value.trim(),pdfUrl=$("pdfUrl").value.trim();
+      let imageUrl="",pdfUrl="";
       const safeName=name=>name.replace(/[^a-zA-Z0-9._-]/g,"_");
       if(imageFile){const path="tactics/"+currentUser.uid+"/"+Date.now()+"_image_"+safeName(imageFile.name);const uploaded=await uploadBytes(storageRef(storage,path),imageFile,{contentType:imageFile.type});imageUrl=await getDownloadURL(uploaded.ref)}
       if(pdfFile){const path="tactics/"+currentUser.uid+"/"+Date.now()+"_pdf_"+safeName(pdfFile.name);const uploaded=await uploadBytes(storageRef(storage,path),pdfFile,{contentType:"application/pdf"});pdfUrl=await getDownloadURL(uploaded.ref)}
