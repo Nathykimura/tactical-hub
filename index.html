@@ -44,8 +44,11 @@
         <div class="field full"><label for="tacticName">Nome da estratégia *</label><input id="tacticName" required maxlength="90" placeholder="Ex.: Pistol A — execução rápida"></div>
         <div class="field full"><label for="tacticDescription">Descrição / funções das jogadoras</label><textarea id="tacticDescription" placeholder="Explique a execução, posições e responsabilidades..."></textarea></div>
         <div class="field full"><label for="videoUrl">Link de vídeo</label><input id="videoUrl" type="url" placeholder="https://..."></div>
-        <div class="field"><label for="imageUrl">Link de print/imagem</label><input id="imageUrl" type="url" placeholder="https://..."></div>
-        <div class="field"><label for="pdfUrl">Link de PDF</label><input id="pdfUrl" type="url" placeholder="https://..."></div>
+        <div class="field"><label for="imageFile">Enviar print/imagem (opcional)</label><input id="imageFile" type="file" accept="image/*"></div>
+        <div class="field"><label for="pdfFile">Enviar PDF (opcional)</label><input id="pdfFile" type="file" accept="application/pdf"></div>
+        <div class="field"><label for="imageUrl">Ou link de print/imagem</label><input id="imageUrl" type="url" placeholder="https://..."></div>
+        <div class="field"><label for="pdfUrl">Ou link de PDF</label><input id="pdfUrl" type="url" placeholder="https://..."></div>
+        <div class="field full"><div id="uploadStatus" class="muted" aria-live="polite">Arquivos: até 20 MB cada. Formatos aceitos: imagens e PDF.</div></div>
       </div><div class="actions" style="justify-content:end;margin-top:14px"><button type="button" id="cancelTactic" class="btn">Cancelar</button><button class="btn primary" type="submit">Salvar tática</button></div></form>
     </section>
     <section id="adminPage" class="hidden"><div class="crumb"><button id="adminHome">Mapas</button><span>/</span><span>Administração</span></div><div class="hero"><div class="eyebrow">ÁREA RESTRITA</div><h2>GERENCIAMENTO<br>DA EQUIPE</h2><p>Cadastre o UID de cada integrante depois de criar a conta dela no Firebase Authentication.</p></div>
@@ -61,6 +64,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import { getFirestore, collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+  import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCRMNXBan2UarVUxAKHJcyfNgwKf3uXunk",
@@ -71,7 +75,7 @@
     appId: "1:851177234379:web:1b285d3b96b1bb65bb604e"
   };
   const COACH_UID = "FJj2EIUkF0QD9B7HOnYKIojgS262";
-  const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
+  const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app);
   const maps = ["Ascent","Abyss","Bind","Breeze","Corrode","Fracture","Haven","Icebox","Lotus","Pearl","Split","Summit","Sunset"];
   const categories = [
     ["pistol","Pistol","Rounds pistola"],["anti-eco","Anti-Eco","Contra compras econômicas"],
@@ -96,7 +100,24 @@
   async function refreshMembers(){const wrap=$("memberList");wrap.textContent="Carregando...";try{const snap=await getDocs(collection(db,"users"));wrap.innerHTML="";if(!snap.size){wrap.textContent="Nenhuma jogadora cadastrada ainda.";return}snap.forEach(d=>{const data=d.data(),row=document.createElement("div");row.className="member-row";const info=document.createElement("div");info.innerHTML="<strong></strong><div class='muted' style='font-size:11px'></div>";info.querySelector("strong").textContent=data.name||"Integrante";info.querySelector("div").textContent=d.id;const status=document.createElement("span");status.className="pill "+(data.active?"":"off");status.textContent=data.active?"Ativa":"Bloqueada";const controls=document.createElement("div");controls.className="actions";const btn=document.createElement("button");btn.className="btn";btn.textContent=data.active?"Bloquear":"Reativar";btn.onclick=async()=>{try{await updateDoc(doc(db,"users",d.id),{active:!data.active});notice(data.active?"Acesso bloqueado.":"Acesso reativado.");await refreshMembers()}catch(e){notice("Não foi possível alterar o acesso.");console.error(e)}};const remove=document.createElement("button");remove.className="btn";remove.textContent="Remover acesso";remove.onclick=async()=>{if(!confirm("Remover "+(data.name||"esta integrante")+" do Tactical Hub? Ela perderá o acesso aos mapas. A conta de autenticação continuará cadastrada no Firebase."))return;try{await deleteDoc(doc(db,"users",d.id));notice("Acesso removido do Tactical Hub.");await refreshMembers()}catch(e){notice("Não foi possível remover o acesso.");console.error(e)}};controls.append(btn,remove);row.append(info,status,controls);wrap.append(row)})}catch(e){wrap.textContent="Erro ao carregar integrantes.";console.error(e)}}
   $("memberForm").addEventListener("submit",async e=>{e.preventDefault();try{const uid=$("memberUid").value.trim();if(uid===COACH_UID)throw new Error("Esse UID pertence à coach.");await setDoc(doc(db,"users",uid),{name:$("memberName").value.trim(),active:true,role:"player",createdAt:serverTimestamp()});$("memberForm").reset();notice("Acesso da integrante cadastrado!");await refreshMembers()}catch(err){notice("Não foi possível cadastrar. Confira o UID e as regras.");console.error(err)}});
   $("newTacticBtn").addEventListener("click",()=>$("tacticForm").classList.remove("hidden"));$("cancelTactic").addEventListener("click",()=>$("tacticForm").classList.add("hidden"));
-  $("tacticForm").addEventListener("submit",async e=>{e.preventDefault();try{await addDoc(collection(db,"tactics"),{mapId:activeMap,categoryId:activeCategory[0],title:$("tacticName").value.trim(),description:$("tacticDescription").value.trim(),videoUrl:$("videoUrl").value.trim(),imageUrl:$("imageUrl").value.trim(),pdfUrl:$("pdfUrl").value.trim(),createdAt:serverTimestamp(),createdBy:currentUser.uid});$("tacticForm").reset();$("tacticForm").classList.add("hidden");notice("Tática salva!");await loadTactics()}catch(err){notice("Não foi possível salvar. Confira sua autenticação e as regras.");console.error(err)}});
+  $("tacticForm").addEventListener("submit",async e=>{
+    e.preventDefault();
+    const submit=$("tacticForm").querySelector('button[type="submit"]');
+    const imageFile=$("imageFile").files[0],pdfFile=$("pdfFile").files[0];
+    const validImage=f=>!f||(f.type.startsWith("image/")&&f.size<=20*1024*1024);
+    if(!validImage(imageFile)){notice("A imagem precisa ser válida e ter até 20 MB.");return}
+    if(pdfFile&&(pdfFile.type!=="application/pdf"||pdfFile.size>20*1024*1024)){notice("O PDF precisa ter até 20 MB.");return}
+    submit.disabled=true;$("uploadStatus").textContent="Enviando arquivos...";
+    try{
+      let imageUrl=$("imageUrl").value.trim(),pdfUrl=$("pdfUrl").value.trim();
+      const safeName=name=>name.replace(/[^a-zA-Z0-9._-]/g,"_");
+      if(imageFile){const path="tactics/"+currentUser.uid+"/"+Date.now()+"_image_"+safeName(imageFile.name);const uploaded=await uploadBytes(storageRef(storage,path),imageFile,{contentType:imageFile.type});imageUrl=await getDownloadURL(uploaded.ref)}
+      if(pdfFile){const path="tactics/"+currentUser.uid+"/"+Date.now()+"_pdf_"+safeName(pdfFile.name);const uploaded=await uploadBytes(storageRef(storage,path),pdfFile,{contentType:"application/pdf"});pdfUrl=await getDownloadURL(uploaded.ref)}
+      await addDoc(collection(db,"tactics"),{mapId:activeMap,categoryId:activeCategory[0],title:$("tacticName").value.trim(),description:$("tacticDescription").value.trim(),videoUrl:$("videoUrl").value.trim(),imageUrl,pdfUrl,createdAt:serverTimestamp(),createdBy:currentUser.uid});
+      $("tacticForm").reset();$("tacticForm").classList.add("hidden");$("uploadStatus").textContent="Arquivos: até 20 MB cada. Formatos aceitos: imagens e PDF.";notice("Tática e arquivos salvos!");await loadTactics()
+    }catch(err){notice("Falha ao salvar. Confira as regras do Storage e do Firestore.");console.error(err);$("uploadStatus").textContent="Não foi possível enviar. Confira as regras do Firebase."}
+    finally{submit.disabled=false}
+  });
   $("homeCrumb").onclick=()=>show("home");$("adminHome").onclick=()=>show("home");$("mapCrumbBtn").onclick=()=>show("mapPage");
   $("loginPageForm").addEventListener("submit",async e=>{e.preventDefault();const b=$("loginPageSubmit");b.disabled=true;try{await signInWithEmailAndPassword(auth,$("loginEmail").value.trim(),$("loginPassword").value)}catch(err){$("loginPageError").textContent="E-mail ou senha inválidos. Tente novamente."; $("loginPageError").classList.remove("hidden")}finally{b.disabled=false}});
   show("loginPage");
