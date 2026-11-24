@@ -52,7 +52,7 @@
       </div><div class="actions" style="justify-content:end;margin-top:14px"><button type="button" id="cancelTactic" class="btn">Cancelar</button><button class="btn primary" type="submit">Salvar tática</button></div></form>
     </section>
     <section id="adminPage" class="hidden"><div class="crumb"><button id="adminHome">Mapas</button><span>/</span><span>Administração</span></div><div class="hero"><div class="eyebrow">ÁREA RESTRITA</div><h2>GERENCIAMENTO<br>DA EQUIPE</h2><p>Cadastre o UID de cada integrante depois de criar a conta dela no Firebase Authentication.</p></div>
-      <form id="memberForm" class="panel"><h3 style="margin-top:0">Adicionar integrante</h3><div class="form-grid"><div class="field"><label for="memberName">Nome</label><input id="memberName" required placeholder="Nome da jogadora"></div><div class="field"><label for="memberUid">UID do Firebase Authentication</label><input id="memberUid" required placeholder="UID da conta"></div></div><div class="actions" style="justify-content:end;margin-top:12px"><button class="btn primary">Adicionar acesso</button></div></form>
+      <form id="memberForm" class="panel"><h3 style="margin-top:0">Adicionar integrante</h3><div class="form-grid"><div class="field"><label for="memberName">Nome</label><input id="memberName" required placeholder="Nome da jogadora"></div><div class="field"><label for="memberUid">UID do Firebase Authentication</label><input id="memberUid" required placeholder="UID da conta"></div><div class="field"><label for="memberRole">Cargo</label><select id="memberRole"><option value="player">Jogadora</option><option value="igl">IGL</option></select></div></div><div class="actions" style="justify-content:end;margin-top:12px"><button class="btn primary">Adicionar acesso</button></div></form>
       <div class="panel"><h3 style="margin-top:0">Integrantes cadastradas</h3><div id="memberList" class="muted">Carregando...</div></div>
     </section>
   </main>
@@ -63,8 +63,8 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-  import { getFirestore, collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-  import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js";
+  import { getFirestore, collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+  import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCRMNXBan2UarVUxAKHJcyfNgwKf3uXunk",
@@ -75,7 +75,13 @@
     appId: "1:851177234379:web:1b285d3b96b1bb65bb604e"
   };
   const COACH_UID = "FJj2EIUkF0QD9B7HOnYKIojgS262";
-  const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app);
+  const IGL_UIDS = ["RDoqbjAAhWPgrJEURQRXdPICnZF2"];
+  const SUPABASE_URL = "https://vzizucrfyljnrssjxmkf.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Ef--7MH7CzV7wdO0z8e9Fw_TLVRbc5y";
+  const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+    accessToken: async () => auth.currentUser ? await auth.currentUser.getIdToken() : null
+  });
   const maps = ["Ascent","Abyss","Bind","Breeze","Corrode","Fracture","Haven","Icebox","Lotus","Pearl","Split","Summit","Sunset"];
   const categories = [
     ["pistol","Pistol","Rounds pistola"],["anti-eco","Anti-Eco","Contra compras econômicas"],
@@ -83,70 +89,51 @@
     ["defesa","Defesa","Setups e posicionamentos"],["retake","Retake","Retomada de bomb"],
     ["outros","Outras táticas","Estratégias personalizadas"]
   ];
-  let currentUser=null,isCoach=false,activeMap="",activeCategory=null;
+  let currentUser=null,isCoach=false,isIgl=false,currentRole="player",activeMap="",activeCategory=null,editingTacticId=null,editingImagePath="",editingPdfPath="";
+  const canManageTactics = () => isCoach || isIgl;
   const $ = id => document.getElementById(id);
   function notice(message){$("globalNotice").textContent=message;$("globalNotice").classList.remove("hidden");setTimeout(()=>$("globalNotice").classList.add("hidden"),4500)}
   function show(section){["loginPage","home","mapPage","categoryPage","adminPage"].forEach(id=>$(id).classList.toggle("hidden",id!==section))}
   function renderMaps(){$("mapGrid").innerHTML=maps.map((m,i)=>'<button class="map-card" data-map="'+m+'"><div class="map-no">MAPA '+String(i+1).padStart(2,"0")+'</div><div class="map-name">'+m+'</div><div class="map-foot">Abrir central de táticas →</div></button>').join("");document.querySelectorAll("[data-map]").forEach(b=>b.addEventListener("click",()=>openMap(b.dataset.map)))}
   function openMap(map){activeMap=map;$("mapTitle").textContent=map.toUpperCase();$("mapCrumb").textContent=map;$("categoryGrid").innerHTML=categories.map(c=>'<button class="category" data-cat="'+c[0]+'"><strong>'+c[1]+'</strong><span>'+c[2]+'</span></button>').join("");document.querySelectorAll("[data-cat]").forEach(b=>b.addEventListener("click",()=>openCategory(b.dataset.cat)));show("mapPage")}
-  async function openCategory(id){activeCategory=categories.find(c=>c[0]===id);$("categoryCrumb").textContent=activeCategory[1];$("categoryMap").textContent=activeMap.toUpperCase();$("categoryTitle").textContent=activeCategory[1];$("newTacticBtn").classList.toggle("hidden",!isCoach);$("tacticForm").classList.add("hidden");show("categoryPage");await loadTactics()}
-  async function loadTactics(){const list=$("tacticList");list.innerHTML="";$("emptyTactics").classList.add("hidden");try{const snap=await getDocs(collection(db,"tactics"));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>t.mapId===activeMap&&t.categoryId===activeCategory[0]);rows.sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));if(!rows.length){$("emptyTactics").classList.remove("hidden");return}rows.forEach(t=>{const el=document.createElement("article");el.className="tactic";const title=document.createElement("h4");title.textContent=t.title||"Tática sem título";const desc=document.createElement("p");desc.textContent=t.description||"Sem descrição.";el.append(title,desc);const links=document.createElement("div");links.className="links";[["Vídeo",t.videoUrl],["Print",t.imageUrl],["PDF",t.pdfUrl]].forEach(([label,url])=>{if(url){const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="↗ "+label;links.append(a)}});el.append(links);list.append(el)})}catch(e){list.innerHTML='<div class="notice">Não foi possível carregar as táticas. Verifique as regras do Firestore e se sua conta está ativa.</div>';console.error(e)}}
+  async function openCategory(id){activeCategory=categories.find(c=>c[0]===id);$("categoryCrumb").textContent=activeCategory[1];$("categoryMap").textContent=activeMap.toUpperCase();$("categoryTitle").textContent=activeCategory[1];$("newTacticBtn").classList.toggle("hidden",!canManageTactics());$("tacticForm").classList.add("hidden");show("categoryPage");await loadTactics()}
+  async function signedFileUrl(path){const {data,error}=await supabase.storage.from("tactical-files").createSignedUrl(path,3600);if(error)throw error;return data.signedUrl}
+  async function removeStoredFiles(paths){const clean=paths.filter(Boolean);if(!clean.length)return;const {error}=await supabase.storage.from("tactical-files").remove(clean);if(error)throw error}
+  async function loadTactics(){const list=$("tacticList");list.innerHTML="";$("emptyTactics").classList.add("hidden");try{const snap=await getDocs(collection(db,"tactics"));const rows=snap.docs.map(d=>({id:d.id,...d.data()})).filter(t=>t.mapId===activeMap&&t.categoryId===activeCategory[0]);rows.sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));if(!rows.length){$("emptyTactics").classList.remove("hidden");return}for(const t of rows){const el=document.createElement("article");el.className="tactic";const title=document.createElement("h4");title.textContent=t.title||"Tática sem título";const desc=document.createElement("p");desc.textContent=t.description||"Sem descrição.";el.append(title,desc);const links=document.createElement("div");links.className="links";const files=[["Vídeo",t.videoUrl],["Print",t.imagePath?await signedFileUrl(t.imagePath):t.imageUrl],["PDF",t.pdfPath?await signedFileUrl(t.pdfPath):t.pdfUrl]];files.forEach(([label,url])=>{if(url){const a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent="↗ "+label;links.append(a)}});el.append(links);if(canManageTactics()){const controls=document.createElement("div");controls.className="actions";controls.style.marginTop="12px";const edit=document.createElement("button");edit.className="btn";edit.textContent="Editar";edit.onclick=()=>startEditTactic(t);const del=document.createElement("button");del.className="btn";del.textContent="Excluir";del.onclick=()=>deleteTactic(t);controls.append(edit,del);el.append(controls)}list.append(el)}}catch(e){list.innerHTML='<div class="notice">Não foi possível carregar as táticas ou os arquivos. Confira o acesso ativo no Supabase e as regras.</div>';console.error(e)}}
+  function startEditTactic(t){editingTacticId=t.id;editingImagePath=t.imagePath||"";editingPdfPath=t.pdfPath||"";$("tacticForm").querySelector("h3").textContent="Editar tática";$("tacticName").value=t.title||"";$("tacticDescription").value=t.description||"";$("videoUrl").value=t.videoUrl||"";$("imageFile").value="";$("pdfFile").value="";$("uploadStatus").textContent="Se não escolher novos arquivos, os anexos atuais serão mantidos.";$("tacticForm").classList.remove("hidden");$("tacticForm").scrollIntoView({behavior:"smooth",block:"start"})}
+  async function deleteTactic(t){if(!confirm("Excluir a tática \""+(t.title||"sem título")+"\" e seus arquivos anexados?"))return;try{await removeStoredFiles([t.imagePath,t.pdfPath]);await deleteDoc(doc(db,"tactics",t.id));notice("Tática excluída.");await loadTactics()}catch(e){console.error(e);notice("Não foi possível excluir. Confira as permissões de arquivos e Firestore.")}}
   function openLogin(){$("loginError").classList.add("hidden");$("loginDialog").showModal()}
   $("loginBtn").addEventListener("click",openLogin);$("closeLogin").addEventListener("click",()=>$("loginDialog").close());$("logoutBtn").addEventListener("click",async()=>{await signOut(auth);show("loginPage")});
   $("loginForm").addEventListener("submit",async e=>{e.preventDefault();try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);$("loginDialog").close()}catch(err){$("loginError").textContent="Não foi possível entrar. Confira e-mail e senha."; $("loginError").classList.remove("hidden")}});
-  onAuthStateChanged(auth,async user=>{show("loginPage");currentUser=user;isCoach=!!user&&user.uid===COACH_UID;if(user&&!isCoach){try{const member=await getDoc(doc(db,"users",user.uid));if(!member.exists()||member.data().active!==true){await signOut(auth);currentUser=null;show("loginPage");notice("Acesso ainda não liberado. Peça à coach para ativar seu cadastro.");return}}catch(e){await signOut(auth);currentUser=null;notice("Não foi possível validar seu acesso. Confira as regras do Firestore.");return}}
-    show(currentUser?"home":"loginPage");$("loginBtn").classList.add("hidden");$("logoutBtn").classList.toggle("hidden",!currentUser);$("who").textContent=currentUser?(isCoach?"COACH":"JOGADORA"):"";if(isCoach){const admin=document.createElement("button");admin.id="adminBtn";admin.className="btn";admin.textContent="Equipe";if(!$("adminBtn"))$("who").after(admin);$("adminBtn").onclick=loadAdmin}else if($("adminBtn"))$("adminBtn").remove();if(activeCategory&&currentUser)await loadTactics()});
+  async function syncTeamAccess(){if(!isCoach)return;const snap=await getDocs(collection(db,"users"));const rows=[{firebase_uid:COACH_UID,active:true},...snap.docs.map(d=>({firebase_uid:d.id,active:d.data().active===true}))];const {error}=await supabase.from("team_access").upsert(rows,{onConflict:"firebase_uid"});if(error)throw error}
+  onAuthStateChanged(auth,async user=>{show("loginPage");currentUser=user;isCoach=!!user&&user.uid===COACH_UID;isIgl=false;currentRole=isCoach?"coach":"player";if(user){try{await user.getIdToken(true);if(!isCoach){const member=await getDoc(doc(db,"users",user.uid));if(!member.exists()||member.data().active!==true){await signOut(auth);currentUser=null;show("loginPage");notice("Acesso ainda não liberado. Peça à coach para ativar seu cadastro.");return}currentRole=member.data().role||"player";isIgl=currentRole==="igl"||IGL_UIDS.includes(user.uid)}if(isCoach){try{await syncTeamAccess()}catch(syncError){console.error("Falha ao sincronizar acessos no Supabase:",syncError);notice("Login OK, mas não foi possível sincronizar os acessos de arquivos.")}}}catch(e){await signOut(auth);currentUser=null;notice("Não foi possível validar seu acesso. Confira as regras do Firestore e do Supabase.");return}}
+    show(currentUser?"home":"loginPage");$("loginBtn").classList.add("hidden");$("logoutBtn").classList.toggle("hidden",!currentUser);$("who").textContent=currentUser?(isCoach?"COACH":isIgl?"IGL":"JOGADORA"):"";if(isCoach){if(!$("adminBtn")){const admin=document.createElement("button");admin.id="adminBtn";admin.className="btn";admin.textContent="Equipe";$("who").after(admin)}$("adminBtn").onclick=loadAdmin}else if($("adminBtn"))$("adminBtn").remove();if(activeCategory&&currentUser)await loadTactics()});
   async function loadAdmin(){show("adminPage");await refreshMembers()}
-  async function refreshMembers(){const wrap=$("memberList");wrap.textContent="Carregando...";try{const snap=await getDocs(collection(db,"users"));wrap.innerHTML="";if(!snap.size){wrap.textContent="Nenhuma jogadora cadastrada ainda.";return}snap.forEach(d=>{const data=d.data(),row=document.createElement("div");row.className="member-row";const info=document.createElement("div");info.innerHTML="<strong></strong><div class='muted' style='font-size:11px'></div>";info.querySelector("strong").textContent=data.name||"Integrante";info.querySelector("div").textContent=d.id;const status=document.createElement("span");status.className="pill "+(data.active?"":"off");status.textContent=data.active?"Ativa":"Bloqueada";const controls=document.createElement("div");controls.className="actions";const btn=document.createElement("button");btn.className="btn";btn.textContent=data.active?"Bloquear":"Reativar";btn.onclick=async()=>{try{await updateDoc(doc(db,"users",d.id),{active:!data.active});notice(data.active?"Acesso bloqueado.":"Acesso reativado.");await refreshMembers()}catch(e){notice("Não foi possível alterar o acesso.");console.error(e)}};const remove=document.createElement("button");remove.className="btn";remove.textContent="Remover acesso";remove.onclick=async()=>{if(!confirm("Remover "+(data.name||"esta integrante")+" do Tactical Hub? Ela perderá o acesso aos mapas. A conta de autenticação continuará cadastrada no Firebase."))return;try{await deleteDoc(doc(db,"users",d.id));notice("Acesso removido do Tactical Hub.");await refreshMembers()}catch(e){notice("Não foi possível remover o acesso.");console.error(e)}};controls.append(btn,remove);row.append(info,status,controls);wrap.append(row)})}catch(e){wrap.textContent="Erro ao carregar integrantes.";console.error(e)}}
-  $("memberForm").addEventListener("submit",async e=>{e.preventDefault();try{const uid=$("memberUid").value.trim();if(uid===COACH_UID)throw new Error("Esse UID pertence à coach.");await setDoc(doc(db,"users",uid),{name:$("memberName").value.trim(),active:true,role:"player",createdAt:serverTimestamp()});$("memberForm").reset();notice("Acesso da integrante cadastrado!");await refreshMembers()}catch(err){notice("Não foi possível cadastrar. Confira o UID e as regras.");console.error(err)}});
-  $("newTacticBtn").addEventListener("click",()=>$("tacticForm").classList.remove("hidden"));$("cancelTactic").addEventListener("click",()=>$("tacticForm").classList.add("hidden"));
-  function uploadFileWithProgress(file,path,contentType,label){
-    return new Promise((resolve,reject)=>{
-      const task=uploadBytesResumable(storageRef(storage,path),file,{contentType});
-      task.on("state_changed",
-        snapshot=>{
-          const percent=Math.round(snapshot.bytesTransferred/snapshot.totalBytes*100);
-          $("uploadStatus").textContent=label+": "+percent+"% enviado";
-        },
-        error=>reject(error),
-        async()=>{
-          try{resolve(await getDownloadURL(task.snapshot.ref))}
-          catch(error){reject(error)}
-        }
-      );
-    });
-  }
-
+  async function refreshMembers(){const wrap=$("memberList");wrap.textContent="Carregando...";try{const snap=await getDocs(collection(db,"users"));const docs=snap.docs;if(!docs.length){wrap.textContent="Nenhuma jogadora cadastrada ainda."}else{wrap.innerHTML="";docs.forEach(d=>{const data=d.data(),row=document.createElement("div");row.className="member-row";const info=document.createElement("div");info.innerHTML="<strong></strong><div class='muted' style='font-size:11px'></div>";info.querySelector("strong").textContent=(data.name||"Integrante")+" · "+(data.role==="igl"?"IGL":"Jogadora");info.querySelector("div").textContent=d.id;const status=document.createElement("span");status.className="pill "+(data.active?"":"off");status.textContent=data.active?"Ativa":"Bloqueada";const controls=document.createElement("div");controls.className="actions";const btn=document.createElement("button");btn.className="btn";btn.textContent=data.active?"Bloquear":"Reativar";btn.onclick=async()=>{try{await updateDoc(doc(db,"users",d.id),{active:!data.active});const {error}=await supabase.from("team_access").upsert({firebase_uid:d.id,active:!data.active},{onConflict:"firebase_uid"});if(error)throw error;notice(data.active?"Acesso bloqueado.":"Acesso reativado.");await refreshMembers()}catch(e){notice("Não foi possível alterar o acesso.");console.error(e)}};const remove=document.createElement("button");remove.className="btn";remove.textContent="Remover acesso";remove.onclick=async()=>{if(!confirm("Remover "+(data.name||"esta integrante")+" do Tactical Hub? Ela perderá o acesso aos mapas e arquivos. A conta de autenticação continuará cadastrada no Firebase."))return;try{const {error}=await supabase.from("team_access").upsert({firebase_uid:d.id,active:false},{onConflict:"firebase_uid"});if(error)throw error;await deleteDoc(doc(db,"users",d.id));notice("Acesso removido do Tactical Hub.");await refreshMembers()}catch(e){notice("Não foi possível remover o acesso.");console.error(e)}};controls.append(btn,remove);row.append(info,status,controls);wrap.append(row)})}await syncTeamAccess()}catch(e){wrap.textContent="Erro ao carregar/sincronizar integrantes.";console.error(e)}}
+  $("memberForm").addEventListener("submit",async e=>{e.preventDefault();try{const uid=$("memberUid").value.trim();if(uid===COACH_UID)throw new Error("Esse UID pertence à coach.");const role=$("memberRole").value;await setDoc(doc(db,"users",uid),{name:$("memberName").value.trim(),active:true,role,createdAt:serverTimestamp()});const {error}=await supabase.from("team_access").upsert({firebase_uid:uid,active:true},{onConflict:"firebase_uid"});if(error)throw error;$("memberForm").reset();notice("Acesso da integrante cadastrado!");await refreshMembers()}catch(err){notice("Não foi possível cadastrar/sincronizar. Confira o UID e as regras.");console.error(err)}});
+  $("newTacticBtn").addEventListener("click",()=>{editingTacticId=null;editingImagePath="";editingPdfPath="";$("tacticForm").reset();$("tacticForm").querySelector("h3").textContent="Cadastrar tática";$("uploadStatus").textContent="Arquivos: até 10 MB cada. Formatos aceitos: imagens e PDF.";$("tacticForm").classList.remove("hidden")});
+  $("cancelTactic").addEventListener("click",()=>{$("tacticForm").classList.add("hidden");editingTacticId=null;editingImagePath="";editingPdfPath=""});
+  async function uploadFile(file,label){const safeName=name=>name.replace(/[^a-zA-Z0-9._-]/g,"_");const path="tactics/"+currentUser.uid+"/"+Date.now()+"_"+label.toLowerCase()+"_"+safeName(file.name);const {error}=await supabase.storage.from("tactical-files").upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;return path}
   $("tacticForm").addEventListener("submit",async e=>{
     e.preventDefault();
+    if(!canManageTactics())return notice("Seu perfil não pode editar táticas.");
     const submit=$("tacticForm").querySelector('button[type="submit"]');
     const imageFile=$("imageFile").files[0],pdfFile=$("pdfFile").files[0];
-    const validImage=f=>!f||(f.type.startsWith("image/")&&f.size<=20*1024*1024);
-    if(!validImage(imageFile)){notice("A imagem precisa ser válida e ter até 20 MB.");return}
-    if(pdfFile&&(pdfFile.type!=="application/pdf"||pdfFile.size>20*1024*1024)){notice("O PDF precisa ter até 20 MB.");return}
-    if(!imageFile&&!pdfFile){$("uploadStatus").textContent="Nenhum arquivo selecionado. Salvando a tática..."}
+    const validImage=f=>!f||(f.type.startsWith("image/")&&f.size<=10*1024*1024);
+    if(!validImage(imageFile)){notice("A imagem precisa ser válida e ter até 10 MB.");return}
+    if(pdfFile&&(pdfFile.type!=="application/pdf"||pdfFile.size>10*1024*1024)){notice("O PDF precisa ter até 10 MB.");return}
     submit.disabled=true;
     try{
-      let imageUrl="",pdfUrl="";
-      const safeName=name=>name.replace(/[^a-zA-Z0-9._-]/g,"_");
-      const stamp=Date.now();
-      if(imageFile){
-        const path="tactics/"+currentUser.uid+"/"+stamp+"_image_"+safeName(imageFile.name);
-        imageUrl=await uploadFileWithProgress(imageFile,path,imageFile.type,"Imagem");
-      }
-      if(pdfFile){
-        const path="tactics/"+currentUser.uid+"/"+stamp+"_pdf_"+safeName(pdfFile.name);
-        pdfUrl=await uploadFileWithProgress(pdfFile,path,"application/pdf","PDF");
-      }
+      let imagePath=editingImagePath,pdfPath=editingPdfPath;
+      if(imageFile){$("uploadStatus").textContent="Enviando imagem...";imagePath=await uploadFile(imageFile,"image");}
+      if(pdfFile){$("uploadStatus").textContent="Enviando PDF...";pdfPath=await uploadFile(pdfFile,"pdf");}
       $("uploadStatus").textContent="Salvando dados da tática...";
-      await addDoc(collection(db,"tactics"),{mapId:activeMap,categoryId:activeCategory[0],title:$("tacticName").value.trim(),description:$("tacticDescription").value.trim(),videoUrl:$("videoUrl").value.trim(),imageUrl,pdfUrl,createdAt:serverTimestamp(),createdBy:currentUser.uid});
-      $("tacticForm").reset();$("tacticForm").classList.add("hidden");$("uploadStatus").textContent="Arquivos: até 20 MB cada. Formatos aceitos: imagens e PDF.";notice("Tática e arquivos salvos!");await loadTactics();
-    }catch(err){
-      console.error("Erro ao salvar tática/arquivo:",err);
-      const detail=err?.code||err?.message||"erro desconhecido";
-      $("uploadStatus").textContent="Falha no envio: "+detail;
-      notice("Não foi possível enviar. Veja a mensagem abaixo do formulário.");
-    }finally{submit.disabled=false}
+      const payload={mapId:activeMap,categoryId:activeCategory[0],title:$("tacticName").value.trim(),description:$("tacticDescription").value.trim(),videoUrl:$("videoUrl").value.trim(),imagePath,pdfPath,imageUrl:"",pdfUrl:"",updatedAt:serverTimestamp()};
+      if(editingTacticId){await updateDoc(doc(db,"tactics",editingTacticId),payload);const oldPaths=[];if(imageFile&&editingImagePath)oldPaths.push(editingImagePath);if(pdfFile&&editingPdfPath)oldPaths.push(editingPdfPath);if(oldPaths.length)await removeStoredFiles(oldPaths);notice("Tática atualizada!");}
+      else{await addDoc(collection(db,"tactics"),{...payload,createdAt:serverTimestamp(),createdBy:currentUser.uid});notice("Tática e arquivos salvos!");}
+      $("tacticForm").reset();$("tacticForm").classList.add("hidden");$("tacticForm").querySelector("h3").textContent="Cadastrar tática";$("uploadStatus").textContent="Arquivos: até 10 MB cada. Formatos aceitos: imagens e PDF.";editingTacticId=null;editingImagePath="";editingPdfPath="";await loadTactics();
+    }catch(err){console.error("Erro ao salvar tática/arquivo:",err);const detail=err?.message||err?.code||"erro desconhecido";$("uploadStatus").textContent="Falha no envio: "+detail;notice("Não foi possível salvar. Confira as permissões e o bucket do Supabase.");}
+    finally{submit.disabled=false}
   });
   $("homeCrumb").onclick=()=>show("home");$("adminHome").onclick=()=>show("home");$("mapCrumbBtn").onclick=()=>show("mapPage");
   $("loginPageForm").addEventListener("submit",async e=>{e.preventDefault();const b=$("loginPageSubmit");b.disabled=true;try{await signInWithEmailAndPassword(auth,$("loginEmail").value.trim(),$("loginPassword").value)}catch(err){$("loginPageError").textContent="E-mail ou senha inválidos. Tente novamente."; $("loginPageError").classList.remove("hidden")}finally{b.disabled=false}});
