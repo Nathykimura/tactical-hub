@@ -64,6 +64,7 @@
             <div class="field"><label for="scrimMap">Mapa *</label><select id="scrimMap" required><option value="">Selecione o mapa</option></select></div>
             <div class="field"><label for="scrimOpponent">Time adversário</label><input id="scrimOpponent" maxlength="80" placeholder="Nome do time"></div>
             <div class="field"><label for="scrimComp">Composição / observação</label><input id="scrimComp" maxlength="120" placeholder="Ex.: composição padrão"></div>
+            <div class="field full"><label for="scrimYoutube">Link do vídeo da scrim no YouTube</label><input id="scrimYoutube" type="url" maxlength="500" placeholder="https://www.youtube.com/watch?v=..."><div class="muted" style="font-size:12px">Cole o link do vídeo para a equipe assistir e revisar os rounds.</div></div>
             <div class="field full"><label>Escalação da nossa equipe — selecione 5 integrantes *</label><div id="scrimLineup" class="panel" style="margin:0;padding:10px"><span class="muted">Carregando integrantes...</span></div><div id="lineupCount" class="muted">0 de 5 selecionadas</div></div>
             <div class="field full"><label for="scrimFirstSide">Qual lado nosso time começou? *</label><select id="scrimFirstSide" required><option value="Ataque">Começamos no Ataque</option><option value="Defesa">Começamos na Defesa</option></select><div class="muted" style="font-size:12px">Os rounds 1–12 usam esse lado; do 13 ao 24, o lado troca automaticamente.</div></div>
             <div class="field full"><label>Registro dos 24 rounds *</label><div id="scrimRounds" class="round-grid"></div></div>
@@ -236,6 +237,14 @@
         const notes=document.createElement("p");notes.textContent=r.notes||"Sem anotações.";
         const next=document.createElement("p");next.textContent="Próximo treino: "+(r.nextFocus||"Não definido.");
         card.append(title,meta,score,typeStats,issues,notes,next);
+        if(r.youtubeUrl){
+          try{
+            const videoUrl=new URL(r.youtubeUrl);
+            if(["youtube.com","www.youtube.com","m.youtube.com","youtu.be","www.youtu.be"].includes(videoUrl.hostname)){
+              const videoLink=document.createElement("a");videoLink.href=videoUrl.href;videoLink.target="_blank";videoLink.rel="noopener noreferrer";videoLink.textContent="▶ Assistir vídeo da scrim no YouTube";videoLink.className="btn";card.append(videoLink);
+            }
+          }catch(e){console.warn("Link do YouTube inválido no registro",r.id)}
+        }
         if(r.rounds?.length){const details=document.createElement("details");const summaryTitle=document.createElement("summary");summaryTitle.textContent="Ver os 24 rounds";details.append(summaryTitle);r.rounds.forEach(rd=>{const line=document.createElement("p");line.textContent="Round "+rd.number+" · "+rd.side+" · "+rd.type+" · "+(rd.result==="win"?"Vitória":"Derrota")+(rd.comment?" — "+rd.comment:"");details.append(line)});card.append(details)}
         if(isCoach){const del=document.createElement("button");del.className="btn";del.textContent="Excluir registro";del.onclick=async()=>{if(!confirm("Excluir esta análise de scrim?"))return;try{await deleteDoc(doc(db,"scrims",r.id));notice("Análise excluída.");await loadScrims()}catch(e){console.error(e);notice("Não foi possível excluir a análise.")}};card.append(del)}
         $("scrimList").append(card);
@@ -265,7 +274,7 @@
       const issues=[...$("scrimIssues").querySelectorAll("input:checked")].map(x=>x.value);
       await addDoc(collection(db,"scrims"),{
         playedAt:$("scrimDate").value,map:$("scrimMap").value,opponent:$("scrimOpponent").value.trim(),
-        composition:$("scrimComp").value.trim(),lineup:lineup.map(m=>({uid:m.uid,name:m.name,role:m.role})),
+        composition:$("scrimComp").value.trim(),youtubeUrl:$("scrimYoutube").value.trim(),lineup:lineup.map(m=>({uid:m.uid,name:m.name,role:m.role})),
         rounds,attackWon:summary.attackWon,attackLost:summary.attackLost,defenseWon:summary.defenseWon,defenseLost:summary.defenseLost,
         roundTypeSummary:summary.byType,issues,notes:$("scrimNotes").value.trim(),nextFocus:$("scrimNext").value.trim(),
         createdBy:currentUser.uid,createdAt:serverTimestamp()
