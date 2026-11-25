@@ -19,6 +19,7 @@
     .crumb{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px;margin:25px 0 10px}.crumb button{background:none;border:0;color:var(--red);padding:0}.category-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.category{padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);text-align:left;color:var(--white)}.category:hover{border-color:var(--red)}.category strong{display:block;font-size:18px}.category span{color:var(--muted);font-size:12px}
     .panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:18px;margin:16px 0}.tactic{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin:10px 0}.tactic h4{margin:0 0 5px;font-size:18px}.tactic p{white-space:pre-wrap;color:#c4c7d0;margin:8px 0}.links{display:flex;gap:10px;flex-wrap:wrap}.links a{color:#ff8791;text-decoration:none}.links a:hover{text-decoration:underline}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:var(--muted)}input,textarea,select{width:100%;background:#101218;border:1px solid var(--line);border-radius:8px;padding:10px;color:var(--white)}textarea{min-height:90px;resize:vertical}
+    .round-chart{margin:14px 0;padding:14px;background:#101218;border:1px solid var(--line);border-radius:10px}.round-chart h4{margin:0 0 12px}.round-chart-side{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin:12px 0 7px;color:var(--accent)}.round-chart-row{display:grid;grid-template-columns:90px 82px minmax(70px,1fr);align-items:center;gap:8px;margin:7px 0}.round-chart-label,.round-chart-values{font-size:12px}.round-chart-values{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}.round-chart-bar{height:10px;border-radius:20px;overflow:hidden;background:#292d37;display:flex}.round-chart-wins{display:block;height:10px;background:#20a36b}.round-chart-losses{display:block;height:10px;background:#d65b5b}.round-chart-empty{opacity:.25}.round-chart-legend{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:11px;color:var(--muted)}.round-chart-legend i{width:9px;height:9px;border-radius:50%;margin-left:8px}
     .round-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}.round-card{background:#101218;border:1px solid var(--line);border-radius:10px;padding:12px}.round-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.round-card label{display:block;font-size:11px;color:var(--muted);margin:7px 0 4px}.round-card textarea{min-height:58px}.round-card .round-meta{font-size:11px;color:var(--muted)}.round-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}.round-summary div{background:#101218;border:1px solid var(--line);border-radius:9px;padding:10px}.round-summary strong{display:block;font-size:19px}
     .hidden{display:none!important}.notice{padding:12px 14px;border-radius:9px;background:#29232a;border:1px solid #63313a;color:#ffd9dc;margin:12px 0}.member-row{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--line)}.pill{font-size:11px;padding:3px 8px;border-radius:30px;background:#173b2c;color:#9ae2bd}.pill.off{background:#45252b;color:#ffb4bc}
     footer{border-top:1px solid var(--line);margin-top:50px;padding:18px 0;color:var(--muted);font-size:12px}
@@ -192,10 +193,42 @@
     return cards.map((card,i)=>({number:i+1,side:roundSide(i,first),type:card.querySelector(".round-type").value,result:card.querySelector(".round-result").value,comment:card.querySelector(".round-note").value.trim()}));
   }
   function summarizeRounds(rounds){
-    const summary={attackWon:0,attackLost:0,defenseWon:0,defenseLost:0,byType:{}};
-    roundTypes.forEach(t=>summary.byType[t]={won:0,lost:0});
-    rounds.forEach(r=>{const won=r.result==="win";const side=r.side==="Ataque"?"attack":"defense";summary[side+(won?"Won":"Lost")]++;summary.byType[r.type][won?"won":"lost"]++});
+    const summary={attackWon:0,attackLost:0,defenseWon:0,defenseLost:0,byType:{},bySideType:{Ataque:{},Defesa:{}}};
+    roundTypes.forEach(t=>{summary.byType[t]={won:0,lost:0};summary.bySideType.Ataque[t]={won:0,lost:0};summary.bySideType.Defesa[t]={won:0,lost:0}});
+    rounds.forEach(r=>{
+      const won=r.result==="win",side=r.side==="Ataque"?"attack":"defense";
+      summary[side+(won?"Won":"Lost")]++;
+      summary.byType[r.type][won?"won":"lost"]++;
+      if(summary.bySideType[r.side]?.[r.type])summary.bySideType[r.side][r.type][won?"won":"lost"]++;
+    });
     return summary;
+  }
+  function buildRoundChart(summary){
+    const wrap=document.createElement("div");wrap.className="round-chart";
+    const heading=document.createElement("h4");heading.textContent="Desempenho por lado e tipo de compra";wrap.append(heading);
+    ["Ataque","Defesa"].forEach(side=>{
+      const sideTitle=document.createElement("div");sideTitle.className="round-chart-side";sideTitle.textContent=side;wrap.append(sideTitle);
+      roundTypes.forEach(type=>{
+        const data=summary.bySideType?.[side]?.[type]||{won:0,lost:0},total=data.won+data.lost;
+        const row=document.createElement("div");row.className="round-chart-row";
+        const label=document.createElement("div");label.className="round-chart-label";label.textContent=type;
+        const values=document.createElement("div");values.className="round-chart-values";values.textContent=data.won+"V / "+data.lost+"D";
+        const bar=document.createElement("div");bar.className="round-chart-bar";
+        if(total){
+          const wins=document.createElement("div");wins.className="round-chart-wins";wins.style.width=(data.won/total*100)+"%";
+          const losses=document.createElement("div");losses.className="round-chart-losses";losses.style.width=(data.lost/total*100)+"%";
+          bar.append(wins,losses);
+        }else{bar.classList.add("round-chart-empty")}
+        row.append(label,values,bar);wrap.append(row);
+      });
+    });
+    const legend=document.createElement("div");legend.className="round-chart-legend";
+    const winKey=document.createElement("span");winKey.textContent="Vitórias";
+    const lossKey=document.createElement("span");lossKey.textContent="Derrotas";
+    const winDot=document.createElement("i");winDot.className="round-chart-wins";
+    const lossDot=document.createElement("i");lossDot.className="round-chart-losses";
+    legend.append(winDot,winKey,lossDot,lossKey);wrap.append(legend);
+    return wrap;
   }
   let scrimMembers=[];
   function renderScrimFormOptions(){
@@ -231,12 +264,11 @@
         const title=document.createElement("h4");title.textContent=(r.map||"Mapa")+(r.opponent?" × "+r.opponent:"");
         const meta=document.createElement("div");meta.className="muted";meta.textContent=(r.playedAt||"Data não informada")+" · "+(r.lineup||[]).map(x=>x.name).join(", ");
         const score=document.createElement("p");score.textContent="ATAQUE  "+aw+"–"+al+"  |  DEFESA  "+dw+"–"+dl+"  |  TOTAL  "+(aw+dw)+"–"+(al+dl);
-        const typeStats=document.createElement("p");
-        if(r.rounds?.length){typeStats.textContent="POR COMPRA  "+roundTypes.map(t=>t+": "+summary.byType[t].won+"V / "+summary.byType[t].lost+"D").join("  ·  ")}else{typeStats.textContent="Partida registrada no formato antigo, sem detalhamento por round."}
         const issues=document.createElement("p");issues.textContent="Pontos observados: "+((r.issues||[]).join(", ")||"Nenhum problema categorizado");
         const notes=document.createElement("p");notes.textContent=r.notes||"Sem anotações.";
         const next=document.createElement("p");next.textContent="Próximo treino: "+(r.nextFocus||"Não definido.");
-        card.append(title,meta,score,typeStats,issues,notes,next);
+        card.append(title,meta,score,issues,notes,next);
+        if(r.rounds?.length)card.append(buildRoundChart(summary));
         if(r.youtubeUrl){
           try{
             const videoUrl=new URL(r.youtubeUrl);
