@@ -175,8 +175,7 @@
       head.append(title,side);
       const typeLabel=document.createElement("label");typeLabel.textContent="Tipo de compra";
       const type=document.createElement("select");type.className="round-type";type.required=true;
-      typeTypes=roundTypes;
-      type.innerHTML=roundTypes.map(t=>'<option value="'+t+'">'+t+'</option>').join("");
+      type.innerHTML='<option value="">Tipo de compra</option>'+roundTypes.map(t=>'<option value="'+t+'">'+t+'</option>').join("");
       const resultLabel=document.createElement("label");resultLabel.textContent="Resultado do nosso time";
       const result=document.createElement("select");result.className="round-result";result.required=true;
       result.innerHTML='<option value="">Selecione</option><option value="win">Vitória</option><option value="loss">Derrota</option>';
