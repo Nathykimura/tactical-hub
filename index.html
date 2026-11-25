@@ -230,10 +230,12 @@
         const title=document.createElement("h4");title.textContent=(r.map||"Mapa")+(r.opponent?" × "+r.opponent:"");
         const meta=document.createElement("div");meta.className="muted";meta.textContent=(r.playedAt||"Data não informada")+" · "+(r.lineup||[]).map(x=>x.name).join(", ");
         const score=document.createElement("p");score.textContent="ATAQUE  "+aw+"–"+al+"  |  DEFESA  "+dw+"–"+dl+"  |  TOTAL  "+(aw+dw)+"–"+(al+dl);
+        const typeStats=document.createElement("p");
+        if(r.rounds?.length){typeStats.textContent="POR COMPRA  "+roundTypes.map(t=>t+": "+summary.byType[t].won+"V / "+summary.byType[t].lost+"D").join("  ·  ")}else{typeStats.textContent="Partida registrada no formato antigo, sem detalhamento por round."}
         const issues=document.createElement("p");issues.textContent="Pontos observados: "+((r.issues||[]).join(", ")||"Nenhum problema categorizado");
         const notes=document.createElement("p");notes.textContent=r.notes||"Sem anotações.";
         const next=document.createElement("p");next.textContent="Próximo treino: "+(r.nextFocus||"Não definido.");
-        card.append(title,meta,score,issues,notes,next);
+        card.append(title,meta,score,typeStats,issues,notes,next);
         if(r.rounds?.length){const details=document.createElement("details");const summaryTitle=document.createElement("summary");summaryTitle.textContent="Ver os 24 rounds";details.append(summaryTitle);r.rounds.forEach(rd=>{const line=document.createElement("p");line.textContent="Round "+rd.number+" · "+rd.side+" · "+rd.type+" · "+(rd.result==="win"?"Vitória":"Derrota")+(rd.comment?" — "+rd.comment:"");details.append(line)});card.append(details)}
         if(isCoach){const del=document.createElement("button");del.className="btn";del.textContent="Excluir registro";del.onclick=async()=>{if(!confirm("Excluir esta análise de scrim?"))return;try{await deleteDoc(doc(db,"scrims",r.id));notice("Análise excluída.");await loadScrims()}catch(e){console.error(e);notice("Não foi possível excluir a análise.")}};card.append(del)}
         $("scrimList").append(card);
