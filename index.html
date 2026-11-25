@@ -51,6 +51,33 @@
         <div class="field full"><div id="uploadStatus" class="muted" aria-live="polite">Arquivos: até 20 MB cada. Formatos aceitos: imagens e PDF.</div></div>
       </div><div class="actions" style="justify-content:end;margin-top:14px"><button type="button" id="cancelTactic" class="btn">Cancelar</button><button class="btn primary" type="submit">Salvar tática</button></div></form>
     </section>
+    <section id="scrimsPage" class="hidden">
+      <div class="crumb"><button id="scrimsHome">Início</button><span>/</span><span>Scrims</span></div>
+      <div class="hero"><div class="eyebrow">ANÁLISE COLETIVA</div><h2>SCRIMS &amp;<br>EVOLUÇÃO</h2><p>Registre o que aconteceu, identifique os problemas e transforme cada partida em um plano de treino.</p></div>
+      <div class="section-head"><div><h3>Histórico de scrims</h3><div class="muted">Resultados, dificuldades e aprendizados da equipe.</div></div><button id="newScrimBtn" class="btn primary hidden">+ Registrar scrim</button></div>
+      <div id="scrimForm" class="panel hidden">
+        <h3 style="margin-top:0">Nova análise de scrim</h3>
+        <form id="scrimFormElement">
+          <div class="form-grid">
+            <div class="field"><label for="scrimDate">Data da scrim *</label><input id="scrimDate" type="date" required></div>
+            <div class="field"><label for="scrimMap">Mapa *</label><select id="scrimMap" required><option value="">Selecione o mapa</option></select></div>
+            <div class="field"><label for="scrimOpponent">Time adversário</label><input id="scrimOpponent" maxlength="80" placeholder="Nome do time"></div>
+            <div class="field"><label for="scrimComp">Composição / observação</label><input id="scrimComp" maxlength="120" placeholder="Ex.: composição padrão"></div>
+            <div class="field full"><label>Escalação da nossa equipe — selecione 5 integrantes *</label><div id="scrimLineup" class="panel" style="margin:0;padding:10px"><span class="muted">Carregando integrantes...</span></div><div id="lineupCount" class="muted">0 de 5 selecionadas</div></div>
+            <div class="field"><label for="attackWon">Ataque — rounds ganhos *</label><input id="attackWon" type="number" min="0" max="24" required value="0"></div>
+            <div class="field"><label for="attackLost">Ataque — rounds perdidos *</label><input id="attackLost" type="number" min="0" max="24" required value="0"></div>
+            <div class="field"><label for="defenseWon">Defesa — rounds ganhos *</label><input id="defenseWon" type="number" min="0" max="24" required value="0"></div>
+            <div class="field"><label for="defenseLost">Defesa — rounds perdidos *</label><input id="defenseLost" type="number" min="0" max="24" required value="0"></div>
+            <div class="field full"><label>Problemas observados</label><div id="scrimIssues" class="panel" style="margin:0;padding:10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px"></div></div>
+            <div class="field full"><label for="scrimNotes">Anotações da Coach — o que aconteceu?</label><textarea id="scrimNotes" placeholder="Ex.: perdemos espaço no começo do round; rotações demoradas; dificuldade para executar o retake..."></textarea></div>
+            <div class="field full"><label for="scrimNext">O que precisamos trabalhar no próximo treino?</label><textarea id="scrimNext" placeholder="Defina os principais focos de correção..."></textarea></div>
+          </div>
+          <div id="scrimFormError" class="notice hidden"></div>
+          <div class="actions" style="justify-content:end;margin-top:14px"><button type="button" id="cancelScrim" class="btn">Cancelar</button><button id="saveScrimBtn" class="btn primary" type="submit">Salvar análise</button></div>
+        </form>
+      </div>
+      <div id="scrimList"><div class="panel muted">Carregando histórico...</div></div>
+    </section>
     <section id="adminPage" class="hidden"><div class="crumb"><button id="adminHome">Mapas</button><span>/</span><span>Administração</span></div><div class="hero"><div class="eyebrow">ÁREA RESTRITA</div><h2>GERENCIAMENTO<br>DA EQUIPE</h2><p>Cadastre o UID de cada integrante depois de criar a conta dela no Firebase Authentication.</p></div>
       <form id="memberForm" class="panel"><h3 style="margin-top:0">Adicionar integrante</h3><div class="form-grid"><div class="field"><label for="memberName">Nome</label><input id="memberName" required placeholder="Nome da jogadora"></div><div class="field"><label for="memberUid">UID do Firebase Authentication</label><input id="memberUid" required placeholder="UID da conta"></div><div class="field"><label for="memberRole">Cargo</label><select id="memberRole"><option value="player">Jogadora</option><option value="igl">IGL</option></select></div></div><div class="actions" style="justify-content:end;margin-top:12px"><button class="btn primary">Adicionar acesso</button></div></form>
       <div class="panel"><h3 style="margin-top:0">Integrantes cadastradas</h3><div id="memberList" class="muted">Carregando...</div></div>
@@ -93,7 +120,7 @@
   const canManageTactics = () => isCoach || isIgl;
   const $ = id => document.getElementById(id);
   function notice(message){$("globalNotice").textContent=message;$("globalNotice").classList.remove("hidden");setTimeout(()=>$("globalNotice").classList.add("hidden"),4500)}
-  function show(section){["loginPage","home","mapPage","categoryPage","adminPage"].forEach(id=>$(id).classList.toggle("hidden",id!==section))}
+  function show(section){["loginPage","home","mapPage","categoryPage","adminPage","scrimsPage"].forEach(id=>$(id).classList.toggle("hidden",id!==section))}
   function renderMaps(){$("mapGrid").innerHTML=maps.map((m,i)=>'<button class="map-card" data-map="'+m+'"><div class="map-no">MAPA '+String(i+1).padStart(2,"0")+'</div><div class="map-name">'+m+'</div><div class="map-foot">Abrir central de táticas →</div></button>').join("");document.querySelectorAll("[data-map]").forEach(b=>b.addEventListener("click",()=>openMap(b.dataset.map)))}
   function openMap(map){activeMap=map;$("mapTitle").textContent=map.toUpperCase();$("mapCrumb").textContent=map;$("categoryGrid").innerHTML=categories.map(c=>'<button class="category" data-cat="'+c[0]+'"><strong>'+c[1]+'</strong><span>'+c[2]+'</span></button>').join("");document.querySelectorAll("[data-cat]").forEach(b=>b.addEventListener("click",()=>openCategory(b.dataset.cat)));show("mapPage")}
   async function openCategory(id){activeCategory=categories.find(c=>c[0]===id);$("categoryCrumb").textContent=activeCategory[1];$("categoryMap").textContent=activeMap.toUpperCase();$("categoryTitle").textContent=activeCategory[1];$("newTacticBtn").classList.toggle("hidden",!canManageTactics());$("tacticForm").classList.add("hidden");show("categoryPage");await loadTactics()}
@@ -107,7 +134,7 @@
   $("loginForm").addEventListener("submit",async e=>{e.preventDefault();try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);$("loginDialog").close()}catch(err){$("loginError").textContent="Não foi possível entrar. Confira e-mail e senha."; $("loginError").classList.remove("hidden")}});
   async function syncTeamAccess(){if(!isCoach)return;const snap=await getDocs(collection(db,"users"));const rows=[{firebase_uid:COACH_UID,active:true},...snap.docs.map(d=>({firebase_uid:d.id,active:d.data().active===true}))];const {error}=await supabase.from("team_access").upsert(rows,{onConflict:"firebase_uid"});if(error)throw error}
   onAuthStateChanged(auth,async user=>{show("loginPage");currentUser=user;isCoach=!!user&&user.uid===COACH_UID;isIgl=false;currentRole=isCoach?"coach":"player";if(user){try{await user.getIdToken(true);if(!isCoach){const member=await getDoc(doc(db,"users",user.uid));if(!member.exists()||member.data().active!==true){await signOut(auth);currentUser=null;show("loginPage");notice("Acesso ainda não liberado. Peça à coach para ativar seu cadastro.");return}currentRole=member.data().role||"player";isIgl=currentRole==="igl"||IGL_UIDS.includes(user.uid)}if(isCoach){try{await syncTeamAccess()}catch(syncError){console.error("Falha ao sincronizar acessos no Supabase:",syncError);notice("Login OK, mas não foi possível sincronizar os acessos de arquivos.")}}}catch(e){await signOut(auth);currentUser=null;notice("Não foi possível validar seu acesso. Confira as regras do Firestore e do Supabase.");return}}
-    show(currentUser?"home":"loginPage");$("loginBtn").classList.add("hidden");$("logoutBtn").classList.toggle("hidden",!currentUser);$("who").textContent=currentUser?(isCoach?"COACH":isIgl?"IGL":"JOGADORA"):"";if(isCoach){if(!$("adminBtn")){const admin=document.createElement("button");admin.id="adminBtn";admin.className="btn";admin.textContent="Equipe";$("who").after(admin)}$("adminBtn").onclick=loadAdmin}else if($("adminBtn"))$("adminBtn").remove();if(activeCategory&&currentUser)await loadTactics()});
+    show(currentUser?"home":"loginPage");$("loginBtn").classList.add("hidden");$("logoutBtn").classList.toggle("hidden",!currentUser);$("who").textContent=currentUser?(isCoach?"COACH":isIgl?"IGL":"JOGADORA"):"";if(currentUser){if(!$("scrimsBtn")){const sb=document.createElement("button");sb.id="scrimsBtn";sb.className="btn";sb.textContent="Scrims";$("who").after(sb)}$("scrimsBtn").onclick=loadScrims}else if($("scrimsBtn"))$("scrimsBtn").remove();if(isCoach){if(!$("adminBtn")){const admin=document.createElement("button");admin.id="adminBtn";admin.className="btn";admin.textContent="Equipe";$("who").after(admin)}$("adminBtn").onclick=loadAdmin}else if($("adminBtn"))$("adminBtn").remove();if(activeCategory&&currentUser)await loadTactics()});
   async function loadAdmin(){show("adminPage");await refreshMembers()}
   async function refreshMembers(){const wrap=$("memberList");wrap.textContent="Carregando...";try{const snap=await getDocs(collection(db,"users"));const docs=snap.docs;if(!docs.length){wrap.textContent="Nenhuma jogadora cadastrada ainda."}else{wrap.innerHTML="";docs.forEach(d=>{const data=d.data(),row=document.createElement("div");row.className="member-row";const info=document.createElement("div");info.innerHTML="<strong></strong><div class='muted' style='font-size:11px'></div>";info.querySelector("strong").textContent=(data.name||"Integrante")+" · "+(data.role==="igl"?"IGL":"Jogadora");info.querySelector("div").textContent=d.id;const status=document.createElement("span");status.className="pill "+(data.active?"":"off");status.textContent=data.active?"Ativa":"Bloqueada";const controls=document.createElement("div");controls.className="actions";const btn=document.createElement("button");btn.className="btn";btn.textContent=data.active?"Bloquear":"Reativar";btn.onclick=async()=>{try{await updateDoc(doc(db,"users",d.id),{active:!data.active});const {error}=await supabase.from("team_access").upsert({firebase_uid:d.id,active:!data.active},{onConflict:"firebase_uid"});if(error)throw error;notice(data.active?"Acesso bloqueado.":"Acesso reativado.");await refreshMembers()}catch(e){notice("Não foi possível alterar o acesso.");console.error(e)}};const remove=document.createElement("button");remove.className="btn";remove.textContent="Remover acesso";remove.onclick=async()=>{if(!confirm("Remover "+(data.name||"esta integrante")+" do Tactical Hub? Ela perderá o acesso aos mapas e arquivos. A conta de autenticação continuará cadastrada no Firebase."))return;try{const {error}=await supabase.from("team_access").upsert({firebase_uid:d.id,active:false},{onConflict:"firebase_uid"});if(error)throw error;await deleteDoc(doc(db,"users",d.id));notice("Acesso removido do Tactical Hub.");await refreshMembers()}catch(e){notice("Não foi possível remover o acesso.");console.error(e)}};controls.append(btn,remove);row.append(info,status,controls);wrap.append(row)})}await syncTeamAccess()}catch(e){wrap.textContent="Erro ao carregar/sincronizar integrantes.";console.error(e)}}
   $("memberForm").addEventListener("submit",async e=>{e.preventDefault();try{const uid=$("memberUid").value.trim();if(uid===COACH_UID)throw new Error("Esse UID pertence à coach.");const role=$("memberRole").value;await setDoc(doc(db,"users",uid),{name:$("memberName").value.trim(),active:true,role,createdAt:serverTimestamp()});const {error}=await supabase.from("team_access").upsert({firebase_uid:uid,active:true},{onConflict:"firebase_uid"});if(error)throw error;$("memberForm").reset();notice("Acesso da integrante cadastrado!");await refreshMembers()}catch(err){notice("Não foi possível cadastrar/sincronizar. Confira o UID e as regras.");console.error(err)}});
@@ -135,6 +162,81 @@
     }catch(err){console.error("Erro ao salvar tática/arquivo:",err);const detail=err?.message||err?.code||"erro desconhecido";$("uploadStatus").textContent="Falha no envio: "+detail;notice("Não foi possível salvar. Confira as permissões e o bucket do Supabase.");}
     finally{submit.disabled=false}
   });
+
+  const scrimIssueOptions=["Entrada desorganizada","Falta de trade","Pouco controle de mapa","Rotação atrasada","Retake desorganizado","Pós-plant confuso","Uso de utilitários","Comunicação","Posicionamento","Economia","Outro"];
+  let scrimMembers=[];
+  function renderScrimFormOptions(){
+    $("scrimMap").innerHTML='<option value="">Selecione o mapa</option>'+maps.map(m=>'<option value="'+m+'">'+m+'</option>').join("");
+    $("scrimIssues").innerHTML=scrimIssueOptions.map((v,i)=>'<label style="display:flex;gap:7px;align-items:center;color:var(--white);font-size:13px"><input type="checkbox" value="'+v+'" style="width:auto"> '+v+'</label>').join("");
+  }
+  async function loadScrimMembers(){
+    const snap=await getDocs(collection(db,"users"));
+    scrimMembers=[{uid:COACH_UID,name:"Coach" ,role:"coach"},...snap.docs.map(d=>({uid:d.id,name:d.data().name||"Integrante",role:d.data().role||"player",active:d.data().active===true})).filter(x=>x.active)];
+    $("scrimLineup").innerHTML=scrimMembers.map(m=>'<label style="display:flex;gap:8px;align-items:center;padding:5px"><input type="checkbox" class="lineupMember" value="'+m.uid+'" style="width:auto"> <span>'+m.name+(m.role==="igl"?" · IGL":"")+'</span></label>').join("");
+    document.querySelectorAll(".lineupMember").forEach(c=>c.addEventListener("change",()=>{
+      const selected=[...document.querySelectorAll(".lineupMember:checked")];
+      if(selected.length>5)c.checked=false;
+      $("lineupCount").textContent=document.querySelectorAll(".lineupMember:checked").length+" de 5 selecionadas";
+    }));
+  }
+  async function loadScrims(){
+    show("scrimsPage");
+    $("newScrimBtn").classList.toggle("hidden",!isCoach);
+    $("scrimForm").classList.add("hidden");
+    $("scrimList").innerHTML='<div class="panel muted">Carregando histórico...</div>';
+    try{
+      const snap=await getDocs(collection(db,"scrims"));
+      const rows=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.playedAt||"").localeCompare(a.playedAt||""));
+      if(!rows.length){$("scrimList").innerHTML='<div class="panel muted">Nenhuma scrim registrada ainda. Quando a primeira análise for cadastrada, ela aparecerá aqui.</div>';return}
+      $("scrimList").innerHTML="";
+      rows.forEach(r=>{
+        const aw=Number(r.attackWon||0),al=Number(r.attackLost||0),dw=Number(r.defenseWon||0),dl=Number(r.defenseLost||0);
+        const card=document.createElement("article");card.className="tactic";
+        const title=document.createElement("h4");title.textContent=(r.map||"Mapa")+(r.opponent?" × "+r.opponent:"");
+        const meta=document.createElement("div");meta.className="muted";meta.textContent=(r.playedAt||"Data não informada")+" · "+(r.lineup||[]).map(x=>x.name).join(", ");
+        const score=document.createElement("p");score.textContent="ATAQUE  "+aw+"–"+al+"  |  DEFESA  "+dw+"–"+dl+"  |  TOTAL  "+(aw+dw)+"–"+(al+dl);
+        const issues=document.createElement("p");issues.textContent="Pontos observados: "+((r.issues||[]).join(", ")||"Nenhum problema categorizado");
+        const notes=document.createElement("p");notes.textContent=r.notes||"Sem anotações.";
+        const next=document.createElement("p");next.textContent="Próximo treino: "+(r.nextFocus||"Não definido.");
+        card.append(title,meta,score,issues,notes,next);
+        if(isCoach){const del=document.createElement("button");del.className="btn";del.textContent="Excluir registro";del.onclick=async()=>{if(!confirm("Excluir esta análise de scrim?"))return;try{await deleteDoc(doc(db,"scrims",r.id));notice("Análise excluída.");await loadScrims()}catch(e){console.error(e);notice("Não foi possível excluir a análise.")}};card.append(del)}
+        $("scrimList").append(card);
+      });
+    }catch(e){console.error("Erro ao carregar scrims:",e);$("scrimList").innerHTML='<div class="notice">Não foi possível carregar as scrims. Verifique as regras do Firestore.</div>'}
+  }
+  $("newScrimBtn").addEventListener("click",async()=>{
+    $("scrimFormElement").reset();$("scrimFormError").classList.add("hidden");
+    document.querySelectorAll(".lineupMember").forEach(c=>c.checked=false);
+    $("lineupCount").textContent="0 de 5 selecionadas";
+    $("scrimDate").value=new Date().toISOString().slice(0,10);
+    $("scrimForm").classList.remove("hidden");
+    try{await loadScrimMembers()}catch(e){console.error(e);notice("Não foi possível carregar a escalação.")};
+    $("scrimForm").scrollIntoView({behavior:"smooth",block:"start"});
+  });
+  $("cancelScrim").addEventListener("click",()=>$("scrimForm").classList.add("hidden"));
+  $("scrimFormElement").addEventListener("submit",async e=>{
+    e.preventDefault();
+    if(!isCoach)return notice("Somente a Coach pode cadastrar scrims.");
+    const lineup=[...document.querySelectorAll(".lineupMember:checked")].map(c=>scrimMembers.find(m=>m.uid===c.value)).filter(Boolean);
+    if(lineup.length!==5){$("scrimFormError").textContent="Selecione exatamente 5 integrantes para a escalação."; $("scrimFormError").classList.remove("hidden");return}
+    const nums=["attackWon","attackLost","defenseWon","defenseLost"].map(id=>Number($(id).value));
+    if(nums.some(n=>!Number.isInteger(n)||n<0||n>24)){$("scrimFormError").textContent="Confira os rounds: use números inteiros entre 0 e 24."; $("scrimFormError").classList.remove("hidden");return}
+    const btn=$("saveScrimBtn");btn.disabled=true;
+    try{
+      const issues=[...$("scrimIssues").querySelectorAll("input:checked")].map(x=>x.value);
+      await addDoc(collection(db,"scrims"),{
+        playedAt:$("scrimDate").value,map:$("scrimMap").value,opponent:$("scrimOpponent").value.trim(),
+        composition:$("scrimComp").value.trim(),lineup:lineup.map(m=>({uid:m.uid,name:m.name,role:m.role})),
+        attackWon:nums[0],attackLost:nums[1],defenseWon:nums[2],defenseLost:nums[3],
+        issues,notes:$("scrimNotes").value.trim(),nextFocus:$("scrimNext").value.trim(),
+        createdBy:currentUser.uid,createdAt:serverTimestamp()
+      });
+      notice("Scrim registrada!");$("scrimForm").classList.add("hidden");await loadScrims();
+    }catch(err){console.error("Erro ao salvar scrim:",err);$("scrimFormError").textContent="Não foi possível salvar. Verifique as regras do Firestore."; $("scrimFormError").classList.remove("hidden")}
+    finally{btn.disabled=false}
+  });
+  renderScrimFormOptions();
+
   $("homeCrumb").onclick=()=>show("home");$("adminHome").onclick=()=>show("home");$("mapCrumbBtn").onclick=()=>show("mapPage");
   $("loginPageForm").addEventListener("submit",async e=>{e.preventDefault();const b=$("loginPageSubmit");b.disabled=true;try{await signInWithEmailAndPassword(auth,$("loginEmail").value.trim(),$("loginPassword").value)}catch(err){$("loginPageError").textContent="E-mail ou senha inválidos. Tente novamente."; $("loginPageError").classList.remove("hidden")}finally{b.disabled=false}});
   show("loginPage");
