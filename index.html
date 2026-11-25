@@ -171,8 +171,9 @@
   }
   async function loadScrimMembers(){
     const snap=await getDocs(collection(db,"users"));
-    scrimMembers=[{uid:COACH_UID,name:"Coach" ,role:"coach"},...snap.docs.map(d=>({uid:d.id,name:d.data().name||"Integrante",role:d.data().role||"player",active:d.data().active===true})).filter(x=>x.active)];
-    $("scrimLineup").innerHTML=scrimMembers.map(m=>'<label style="display:flex;gap:8px;align-items:center;padding:5px"><input type="checkbox" class="lineupMember" value="'+m.uid+'" style="width:auto"> <span>'+m.name+(m.role==="igl"?" · IGL":"")+'</span></label>').join("");
+     scrimMembers=[{uid:COACH_UID,name:"Coach",role:"coach"},...snap.docs.map(d=>({uid:d.id,name:d.data().name||d.data().displayName||d.data().email||"Integrante",role:d.data().role||"player",active:d.data().active===true})).filter(x=>x.active)];
+    $("scrimLineup").innerHTML="";
+    scrimMembers.forEach(m=>{const label=document.createElement("label");label.style.cssText="display:flex;gap:8px;align-items:center;padding:5px";const input=document.createElement("input");input.type="checkbox";input.className="lineupMember";input.value=m.uid;input.style.width="auto";const name=document.createElement("span");name.textContent=m.name+(m.role==="igl"?" · IGL":"");label.append(input,name);$("scrimLineup").append(label)});
     document.querySelectorAll(".lineupMember").forEach(c=>c.addEventListener("change",()=>{
       const selected=[...document.querySelectorAll(".lineupMember:checked")];
       if(selected.length>5)c.checked=false;
@@ -237,7 +238,7 @@
   });
   renderScrimFormOptions();
 
-  $("homeCrumb").onclick=()=>show("home");$("adminHome").onclick=()=>show("home");$("mapCrumbBtn").onclick=()=>show("mapPage");
+  $("scrimsHome").onclick=()=>show("home");$("homeCrumb").onclick=()=>show("home");$("adminHome").onclick=()=>show("home");$("mapCrumbBtn").onclick=()=>show("mapPage");
   $("loginPageForm").addEventListener("submit",async e=>{e.preventDefault();const b=$("loginPageSubmit");b.disabled=true;try{await signInWithEmailAndPassword(auth,$("loginEmail").value.trim(),$("loginPassword").value)}catch(err){$("loginPageError").textContent="E-mail ou senha inválidos. Tente novamente."; $("loginPageError").classList.remove("hidden")}finally{b.disabled=false}});
   show("loginPage");
   renderMaps();
